@@ -1,10 +1,8 @@
-import { useState } from "react";
-import { TileMap } from "./components/TileMap";
+import { TileMap } from "./components/map/TileMap";
 import "./index.css";
 
 function App() {
   const token = import.meta.env.VITE_API_TOKEN || "";
-  const [showDebugInfo, setShowDebugInfo] = useState(false);
 
   const testApiConnection = async () => {
     const testUrl = `https://challenge-tiler.services.propelleraero.com/tiles/0/0/0?token=${token}`;
@@ -30,8 +28,8 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="my-10 mx-16 h-[calc(100vh-8rem)] flex flex-col bg-white rounded-lg shadow-lg overflow-hidden">
+    <div className="max-h-screen bg-gray-50 p-4">
+      <div className="my-10 mx-16 h-[calc(100vh-8rem)] flex flex-col bg-white rounded-lg shadow-lg">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -53,7 +51,7 @@ function App() {
         </header>
 
         {/* Map Container */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative p-2">
           {token ? (
             <TileMap token={token} initialZoom={0} />
           ) : (
