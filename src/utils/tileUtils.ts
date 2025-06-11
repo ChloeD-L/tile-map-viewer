@@ -38,10 +38,10 @@ export const getTilesForViewport = (
   const viewportBottom = centerY + viewportHeight / 2;
 
   // 3. Calculate tile range covered by viewport (with buffer)
-  const startTileX = Math.max(0, Math.floor(viewportLeft / TILE_SIZE) - 2);
-  const startTileY = Math.max(0, Math.floor(viewportTop / TILE_SIZE) - 2);
-  const endTileX = Math.min(tilesCount - 1, Math.floor(viewportRight / TILE_SIZE));
-  const endTileY = Math.min(tilesCount - 1, Math.floor(viewportBottom / TILE_SIZE));
+  const startTileX = Math.max(0, Math.floor(viewportLeft / TILE_SIZE) - 1);
+  const startTileY = Math.max(0, Math.floor(viewportTop / TILE_SIZE) - 1);
+  const endTileX = Math.min(tilesCount - 1, Math.floor(viewportRight / TILE_SIZE) + 1);
+  const endTileY = Math.min(tilesCount - 1, Math.floor(viewportBottom / TILE_SIZE) + 1);
 
   const tiles: TileCoordinate[] = [];
 
@@ -56,12 +56,12 @@ export const getTilesForViewport = (
 };
 
 /**
- * Calculate the pixel position of a tile on screen
+ * Calculate the pixel position of a tile relative to the viewport center
  *
  * How it works:
  * 1. tileX * TILE_SIZE = tile's X position in world coordinates
- * 2. - centerX = offset relative to map center point
- * 3. + viewportWidth/2 = convert to screen coordinates (screen center corresponds to map center)
+ * 2. - centerX = offset relative to world center
+ * 3. + viewportWidth/2 = convert to viewport coordinates (viewport center = 0,0)
  */
 export const getTilePosition = (
   tileX: number, // Tile X coordinate
@@ -72,8 +72,8 @@ export const getTilePosition = (
   viewportHeight: number // Viewport height
 ) => {
   return {
-    // Tile world position - map center + screen center = tile position on screen
-    x: tileX * TILE_SIZE - (centerX - viewportWidth / 2),
-    y: tileY * TILE_SIZE - (centerY - viewportHeight / 2),
+    // Tile position relative to viewport center (viewport coordinates)
+    x: tileX * TILE_SIZE - centerX + viewportWidth / 2,
+    y: tileY * TILE_SIZE - centerY + viewportHeight / 2,
   };
 };
