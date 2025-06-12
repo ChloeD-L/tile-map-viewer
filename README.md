@@ -21,10 +21,25 @@ Build a tile-based mapping application that consumes tiles from Propeller's serv
 
 ### TODO
 
-- [ ] Allow zooming using +/- buttons
-- [ ] Allow scrolling when content doesn't fit in viewport
-- [ ] Handle edge cases (404/403 responses)
-- [ ] Block in some simple tests
+- [x] **Zoom controls** - +/- buttons with zoom levels 0-3
+- [x] **Scrollable viewport** - when content doesn't fit in viewport
+- [x] **Error handling** - Proper HTTP status code handling (403/404/500+/network errors)
+- [x] **Comprehensive testing** - 33 test cases covering all functionality
+
+### Error Handling
+
+- **403 Forbidden** - Red error tiles with token suggestions
+- **404 Not Found** - Gray error tiles for missing tiles
+- **500+ Server Errors** - Orange error tiles for server issues
+- **Network Errors** - Yellow error tiles for connectivity issues
+- **Visual feedback** - Color-coded error states with helpful messages
+
+### Testing
+
+- **API tests** (10) - HTTP handling, error types, blob management
+- **Component tests** (7) - Tile rendering, lifecycle, error states
+- **Integration tests** (7) - TileMap functionality, zoom controls
+- **UI tests** (9) - ZoomControls interactions and boundary conditions
 
 ### Extra Features (if time permits)
 
@@ -35,13 +50,14 @@ Build a tile-based mapping application that consumes tiles from Propeller's serv
 - [ ] Enhanced UI/UX with modern styling
 - [ ] Performance optimizations (tile caching, lazy loading)
 - [ ] Responsive design for mobile devices
-- [ ] Loading states and error handling
 
 ## Tech Stack
 
-- React 18 + TypeScript
-- Vite
-- Tailwind CSS
+- **Frontend:** React 18 + TypeScript
+- **Build tool:** Vite
+- **Styling:** Tailwind CSS
+- **Testing:** Vitest + React Testing Library
+- **HTTP:** Fetch API with blob URL management
 
 ## Development
 
@@ -49,5 +65,6 @@ Build a tile-based mapping application that consumes tiles from Propeller's serv
 yarn dev          # Start dev server
 yarn build        # Build for production
 yarn lint         # Run ESLint
-yarn test         # Run tests (when implemented)
+yarn test         # Run all tests (33 tests)
+yarn test:watch   # Run tests in watch mode
 ```
