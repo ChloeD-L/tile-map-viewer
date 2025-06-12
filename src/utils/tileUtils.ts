@@ -6,11 +6,6 @@ export const getTileUrl = (x: number, y: number, z: number, token: string): stri
   const baseUrl = import.meta.env.VITE_TILE_SERVER_URL || "https://challenge-tiler.services.propelleraero.com";
   const url = `${baseUrl}/tiles/${z}/${x}/${y}?token=${token}`;
 
-  // Optional: Log tile URL for debugging (can be removed in production)
-  if (import.meta.env.DEV) {
-    console.log(`Tile URL generated: ${z}/${x}/${y}`, url);
-  }
-
   return url;
 };
 

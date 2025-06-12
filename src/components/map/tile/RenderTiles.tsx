@@ -26,8 +26,6 @@ export const RenderTiles: React.FC<RenderTilesProps> = ({ tiles, token, centerX,
         const position = getTilePosition(tile.x, tile.y, centerX, centerY, containerSize.width, containerSize.height);
         const url = getTileUrl(tile.x, tile.y, tile.z, token);
 
-        console.log("position", position);
-
         return (
           <Tile
             key={`${tile.z}-${tile.x}-${tile.y}`}
