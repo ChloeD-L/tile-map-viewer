@@ -23,7 +23,7 @@ Build a tile-based mapping application that consumes tiles from Propeller's serv
 
 - [x] Allow zooming using +/- buttons
 - [x] Allow scrolling when content doesn't fit in viewport
-- [ ] Handle edge cases (404/403 responses)
+- [x] Handle edge cases (404/403 responses)
 - [ ] Block in some simple tests
 
 ### Extra Features (if time permits)
