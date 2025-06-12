@@ -1,4 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { loadTile } from "../../../api/tileApi";
+import { getErrorMessage, getErrorStyling, getErrorHint } from "../../../utils/errorUtils";
+import type { TileErrorType } from "../../../types";
 
 interface TileProps {
   x: number;
@@ -10,33 +13,55 @@ interface TileProps {
 
 export const Tile: React.FC<TileProps> = ({ x, y, z, url, style }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [hasError, setHasError] = useState(false);
-  const [errorDetails, setErrorDetails] = useState<string>("");
+  const [errorType, setErrorType] = useState<TileErrorType>("none");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [statusCode, setStatusCode] = useState<number | undefined>();
 
-  const handleLoad = () => {
-    setIsLoading(false);
-    setHasError(false);
-  };
+  useEffect(() => {
+    let isCancelled = false;
 
-  const handleError = (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
-    setIsLoading(false);
-    setHasError(true);
+    const loadTileAsync = async () => {
+      setIsLoading(true);
+      setErrorType("none");
+      setImageUrl(null);
 
-    // Log error details for debugging
-    console.error(`Tile ${z}/${x}/${y} failed to load:`, {
-      url,
-      event,
-      naturalWidth: event.currentTarget.naturalWidth,
-      naturalHeight: event.currentTarget.naturalHeight,
-    });
+      const result = await loadTile(url);
 
-    // Detect error type
-    if (url.includes("token=")) {
-      setErrorDetails("Token/Auth Error");
-    } else {
-      setErrorDetails("Network Error");
-    }
-  };
+      if (isCancelled) return;
+
+      if (result.success && result.imageUrl) {
+        setImageUrl(result.imageUrl);
+        setIsLoading(false);
+      } else {
+        setErrorType(result.errorType || "unknown");
+        setStatusCode(result.statusCode);
+        setIsLoading(false);
+
+        // Log error for debugging
+        console.error(`Tile ${z}/${x}/${y} failed to load:`, {
+          url,
+          errorType: result.errorType,
+          statusCode: result.statusCode,
+          error: result.error,
+        });
+      }
+    };
+
+    loadTileAsync();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [url, x, y, z]);
+
+  // Cleanup blob URL when component unmounts or URL changes
+  useEffect(() => {
+    return () => {
+      if (imageUrl) {
+        URL.revokeObjectURL(imageUrl);
+      }
+    };
+  }, [imageUrl]);
 
   return (
     <div
@@ -47,31 +72,24 @@ export const Tile: React.FC<TileProps> = ({ x, y, z, url, style }) => {
         height: 256,
       }}
     >
-      {!hasError ? (
-        <img
-          src={url}
-          alt={`Tile ${z}/${x}/${y}`}
-          className="w-full h-full object-cover"
-          onLoad={handleLoad}
-          onError={handleError}
-          crossOrigin="anonymous"
-          loading="lazy"
-        />
-      ) : (
-        <div className="w-full h-full bg-red-100 border-2 border-red-300 flex flex-col items-center justify-center text-red-600 text-xs p-2">
-          <div className="font-bold">Load Failed</div>
+      {errorType === "none" && imageUrl ? (
+        <img src={imageUrl} alt={`Tile ${z}/${x}/${y}`} className="w-full h-full object-cover" loading="lazy" />
+      ) : errorType !== "none" ? (
+        <div
+          className={`w-full h-full border-2 flex flex-col items-center justify-center text-xs p-2 ${getErrorStyling(
+            errorType
+          )}`}
+        >
+          <div className="font-bold">{getErrorMessage(errorType, statusCode)}</div>
           <div className="text-center mt-1">
             <div>
-              {z}/{x}/{y}
+              Tile {z}/{x}/{y}
             </div>
-            <div className="text-red-500">{errorDetails}</div>
-            <div className="mt-2 text-xs break-all">{url.substring(0, 50)}...</div>
+            <div className="mt-1 text-xs opacity-75">{getErrorHint(errorType)}</div>
           </div>
         </div>
-      )}
-
-      {isLoading && !hasError && (
-        <div className="absolute inset-0 bg-blue-100 flex items-center justify-center">
+      ) : (
+        <div className="w-full h-full bg-blue-100 flex items-center justify-center">
           <div className="text-blue-600 text-sm">Loading...</div>
         </div>
       )}

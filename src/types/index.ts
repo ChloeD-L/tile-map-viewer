@@ -18,3 +18,5 @@ export interface MapViewport {
   width: number;
   height: number;
 }
+
+export type TileErrorType = "none" | "network" | "not-found" | "forbidden" | "server-error" | "unknown";
