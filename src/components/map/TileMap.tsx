@@ -4,7 +4,7 @@ import { useCallback } from "react";
 import { useEffect } from "react";
 import { getTilesForViewport } from "../../utils/tileUtils";
 import { ZoomControls } from "./controls/ZoomControls";
-import { InfoPanel } from "../infoPanel/InfoPanel";
+import { InfoPanel } from "./info/InfoPanel";
 import { RenderTiles } from "./tile/RenderTiles";
 
 interface TileMapProps {
@@ -111,7 +111,9 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
   return (
     <div
       ref={mapContainerRef}
-      className="relative w-[calc(100vw-10rem-4*2*2px)] h-[calc(100vh-11rem-4*2*2px)] bg-gray-100 border border-gray-400"
+      className="relative w-[calc(100vw-10rem-4*2*2px)] h-[calc(100vh-11rem-4*2*2px)] 
+                 sm:w-[calc(100vw-10rem-4*2*2px)] sm:h-[calc(100vh-11rem-4*2*2px)]
+                 bg-gray-100 border border-gray-400"
       style={{
         maxWidth: "100%",
         maxHeight: "100%",
@@ -129,18 +131,15 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
         />
       </div>
 
-      {/* Zoom controls - fixed in bottom right corner of viewport */}
-      <div className="absolute bottom-4 right-4 z-[1000] pointer-events-auto">
+      <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 z-[1000] pointer-events-auto">
         <ZoomControls zoom={zoom} onZoomIn={handleZoomIn} onZoomOut={handleZoomOut} minZoom={0} maxZoom={3} />
       </div>
 
-      {/* Info panel - fixed in top left corner of viewport */}
       <InfoPanel
         zoom={zoom}
         centerX={centerX}
         centerY={centerY}
         viewportSize={viewportSize}
-        containerSize={containerSize}
         visibleTiles={visibleTiles}
       />
     </div>
