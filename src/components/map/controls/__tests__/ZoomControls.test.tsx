@@ -21,19 +21,19 @@ describe("ZoomControls", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
   });
 
-  it("should call onZoomIn when + button is clicked", () => {
+  it("should call onZoomIn when zoom in button is clicked", () => {
     render(<ZoomControls {...defaultProps} />);
 
-    const zoomInButton = screen.getByText("+");
+    const zoomInButton = screen.getByLabelText("Zoom in");
     fireEvent.click(zoomInButton);
 
     expect(defaultProps.onZoomIn).toHaveBeenCalledTimes(1);
   });
 
-  it("should call onZoomOut when - button is clicked", () => {
+  it("should call onZoomOut when zoom out button is clicked", () => {
     render(<ZoomControls {...defaultProps} />);
 
-    const zoomOutButton = screen.getByText("-");
+    const zoomOutButton = screen.getByLabelText("Zoom out");
     fireEvent.click(zoomOutButton);
 
     expect(defaultProps.onZoomOut).toHaveBeenCalledTimes(1);
@@ -42,22 +42,22 @@ describe("ZoomControls", () => {
   it("should disable zoom out button at minimum zoom", () => {
     render(<ZoomControls {...defaultProps} zoom={0} />);
 
-    const zoomOutButton = screen.getByText("-");
+    const zoomOutButton = screen.getByLabelText("Zoom out");
     expect(zoomOutButton).toBeDisabled();
   });
 
   it("should disable zoom in button at maximum zoom", () => {
     render(<ZoomControls {...defaultProps} zoom={3} />);
 
-    const zoomInButton = screen.getByText("+");
+    const zoomInButton = screen.getByLabelText("Zoom in");
     expect(zoomInButton).toBeDisabled();
   });
 
   it("should enable both buttons at middle zoom levels", () => {
     render(<ZoomControls {...defaultProps} zoom={1} />);
 
-    const zoomInButton = screen.getByText("+");
-    const zoomOutButton = screen.getByText("-");
+    const zoomInButton = screen.getByLabelText("Zoom in");
+    const zoomOutButton = screen.getByLabelText("Zoom out");
 
     expect(zoomInButton).not.toBeDisabled();
     expect(zoomOutButton).not.toBeDisabled();
@@ -66,7 +66,7 @@ describe("ZoomControls", () => {
   it("should not call onZoomIn when button is disabled", () => {
     render(<ZoomControls {...defaultProps} zoom={3} />);
 
-    const zoomInButton = screen.getByText("+");
+    const zoomInButton = screen.getByLabelText("Zoom in");
     fireEvent.click(zoomInButton);
 
     expect(defaultProps.onZoomIn).not.toHaveBeenCalled();
@@ -75,7 +75,7 @@ describe("ZoomControls", () => {
   it("should not call onZoomOut when button is disabled", () => {
     render(<ZoomControls {...defaultProps} zoom={0} />);
 
-    const zoomOutButton = screen.getByText("-");
+    const zoomOutButton = screen.getByLabelText("Zoom out");
     fireEvent.click(zoomOutButton);
 
     expect(defaultProps.onZoomOut).not.toHaveBeenCalled();
@@ -84,10 +84,10 @@ describe("ZoomControls", () => {
   it("should have correct styling for enabled buttons", () => {
     render(<ZoomControls {...defaultProps} zoom={1} />);
 
-    const zoomInButton = screen.getByText("+");
-    const zoomOutButton = screen.getByText("-");
+    const zoomInButton = screen.getByLabelText("Zoom in");
+    const zoomOutButton = screen.getByLabelText("Zoom out");
 
-    expect(zoomInButton).toHaveClass("hover:bg-blue-600");
-    expect(zoomOutButton).toHaveClass("hover:bg-blue-600");
+    expect(zoomInButton).toHaveClass("hover:bg-blue-50");
+    expect(zoomOutButton).toHaveClass("hover:bg-blue-50");
   });
 });
