@@ -111,7 +111,7 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
   return (
     <div
       ref={mapContainerRef}
-      className="relative w-[calc(100vw-8rem-4*2px)] h-[calc(100vh-14rem-4*2px)] bg-gray-100 border-2 border-red-500"
+      className="relative w-[calc(100vw-10rem-4*2*2px)] h-[calc(100vh-11rem-4*2*2px)] bg-gray-100 border border-gray-400"
       style={{
         maxWidth: "100%",
         maxHeight: "100%",
@@ -120,21 +120,13 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
       {/* Scrollable container - constrained to parent size */}
       <div ref={scrollContainerRef} className="overflow-auto w-full h-full relative">
         {/* Large scrollable area with map centered */}
-        <div
-          className="relative flex justify-center items-center"
-          style={{
-            width: containerSize.width + viewportSize.width * 0.2,
-            height: containerSize.height + viewportSize.height * 0.2,
-          }}
-        >
-          <RenderTiles
-            tiles={visibleTiles}
-            token={token}
-            centerX={centerX}
-            centerY={centerY}
-            containerSize={containerSize}
-          />
-        </div>
+        <RenderTiles
+          tiles={visibleTiles}
+          token={token}
+          centerX={centerX}
+          centerY={centerY}
+          containerSize={containerSize}
+        />
       </div>
 
       {/* Zoom controls - fixed in bottom right corner of viewport */}

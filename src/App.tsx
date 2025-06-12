@@ -29,7 +29,7 @@ function App() {
 
   return (
     <div className="max-h-screen bg-gray-50 p-4">
-      <div className="my-10 mx-16 h-[calc(100vh-8rem)] flex flex-col bg-white rounded-lg shadow-lg">
+      <div className="my-10 mx-16 h-[calc(100vh-7rem)] flex flex-col bg-white rounded-lg shadow-lg">
         {/* Header */}
         <header className="bg-white shadow-sm border-b border-gray-200 h-16 flex-shrink-0">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
