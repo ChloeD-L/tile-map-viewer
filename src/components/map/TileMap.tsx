@@ -207,7 +207,7 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
         centerX={viewportCenterX}
         centerY={viewportCenterY}
         viewportSize={viewportSize}
-        visibleTiles={allTiles}
+        allTiles={allTiles}
       />
     </div>
   );

@@ -8,10 +8,10 @@ interface InfoPanelProps {
   centerX: number;
   centerY: number;
   viewportSize: { width: number; height: number };
-  visibleTiles: TileCoordinate[];
+  allTiles: TileCoordinate[];
 }
 
-export const InfoPanel: React.FC<InfoPanelProps> = ({ zoom, centerX, centerY, viewportSize, visibleTiles }) => {
+export const InfoPanel: React.FC<InfoPanelProps> = ({ zoom, centerX, centerY, viewportSize, allTiles }) => {
   return (
     <>
       {/* mobile minimize display */}
@@ -39,13 +39,7 @@ export const InfoPanel: React.FC<InfoPanelProps> = ({ zoom, centerX, centerY, vi
         <div className="text-sm font-medium mb-2 text-gray-800">Zoom: {zoom}</div>
 
         <div className="space-y-1 text-xs">
-          <MapInfo
-            zoom={zoom}
-            centerX={centerX}
-            centerY={centerY}
-            viewportSize={viewportSize}
-            visibleTiles={visibleTiles}
-          />
+          <MapInfo zoom={zoom} centerX={centerX} centerY={centerY} viewportSize={viewportSize} allTiles={allTiles} />
         </div>
       </div>
     </>
