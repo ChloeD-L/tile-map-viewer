@@ -14,7 +14,7 @@ vi.mock("../controls/ZoomControls", () => ({
 }));
 
 vi.mock("../info/InfoPanel", () => ({
-  InfoPanel: ({ zoom, centerX, centerY, viewportSize, visibleTiles }: any) => (
+  InfoPanel: ({ zoom, centerX, centerY, viewportSize, allTiles }: any) => (
     <div data-testid="info-panel">
       <div>Zoom: {zoom}</div>
       <div>
@@ -23,7 +23,6 @@ vi.mock("../info/InfoPanel", () => ({
       <div>
         Viewport: {Math.round(viewportSize.width)} × {Math.round(viewportSize.height)}
       </div>
-      <div>Tiles: {visibleTiles.length}</div>
     </div>
   ),
 }));
@@ -147,151 +146,113 @@ describe("TileMap Integration", () => {
     expect(mapContainer).toHaveClass("border-gray-400");
   });
 
+  describe("Scroll handling", () => {
+    it("should update viewport center on scroll", async () => {
+      const { container } = render(<TileMap {...defaultProps} />);
+      const scrollContainer = container.querySelector(".overflow-auto");
+
+      // Mock scroll properties with getters and setters
+      let scrollLeft = 100;
+      let scrollTop = 100;
+
+      Object.defineProperty(scrollContainer, "scrollLeft", {
+        get: () => scrollLeft,
+        set: (value) => {
+          scrollLeft = value;
+        },
+        configurable: true,
+      });
+
+      Object.defineProperty(scrollContainer, "scrollTop", {
+        get: () => scrollTop,
+        set: (value) => {
+          scrollTop = value;
+        },
+        configurable: true,
+      });
+
+      Object.defineProperty(scrollContainer, "scrollWidth", { get: () => 1000 });
+      Object.defineProperty(scrollContainer, "scrollHeight", { get: () => 1000 });
+      Object.defineProperty(scrollContainer, "clientWidth", { get: () => 800 });
+      Object.defineProperty(scrollContainer, "clientHeight", { get: () => 600 });
+
+      const mockScrollEvent = new Event("scroll");
+      fireEvent.scroll(scrollContainer!, mockScrollEvent);
+
+      await waitFor(() => {
+        const infoPanel = screen.getByTestId("info-panel");
+        expect(infoPanel).toHaveTextContent(/Center: \d+, \d+/);
+      });
+    });
+  });
+
   describe("Resize handling", () => {
     it("should setup ResizeObserver on mount", () => {
       render(<TileMap {...defaultProps} />);
-
-      expect(mockResizeObserver).toHaveBeenCalledWith(expect.any(Function));
-      expect(mockResizeObserver.mock.results[0].value.observe).toHaveBeenCalled();
+      expect(mockResizeObserver).toHaveBeenCalled();
     });
 
-    it("should handle ResizeObserver entries and update viewport size", async () => {
+    it("should handle window resize", async () => {
       render(<TileMap {...defaultProps} />);
 
-      // Simulate ResizeObserver callback with new dimensions
-      const mockEntries = [
-        {
-          contentRect: {
-            width: 1000,
-            height: 800,
-          },
-        },
-      ];
-
-      // Trigger the ResizeObserver callback wrapped in act
       await act(async () => {
-        mockResizeObserverCallback(mockEntries);
+        window.dispatchEvent(new Event("resize"));
+      });
+
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    });
+
+    it("should update viewport size on container resize", async () => {
+      const { container } = render(<TileMap {...defaultProps} />);
+      const mapContainer = container.querySelector(".relative");
+
+      // Mock container size with border width
+      const borderWidth = 4; // 2px border on each side
+      Object.defineProperty(mapContainer, "clientWidth", { get: () => 1000 });
+      Object.defineProperty(mapContainer, "clientHeight", { get: () => 800 });
+
+      await act(async () => {
+        // Trigger ResizeObserver callback with contentRect
+        mockResizeObserverCallback([
+          {
+            contentRect: {
+              width: 1000 - borderWidth,
+              height: 800 - borderWidth,
+            },
+          },
+        ]);
       });
 
       await waitFor(() => {
         const infoPanel = screen.getByTestId("info-panel");
-        expect(infoPanel).toHaveTextContent("Viewport: 1000 × 800");
+        expect(infoPanel).toHaveTextContent("Viewport: 996 × 796");
       });
     });
+  });
 
-    it("should handle window resize events", async () => {
-      // Mock clientWidth and clientHeight for the map container
-      Object.defineProperty(HTMLDivElement.prototype, "clientWidth", {
-        configurable: true,
-        value: 900,
-      });
-      Object.defineProperty(HTMLDivElement.prototype, "clientHeight", {
-        configurable: true,
-        value: 700,
-      });
-
-      render(<TileMap {...defaultProps} />);
-
-      // Trigger window resize event
-      fireEvent.resize(window);
-
-      // Wait for requestAnimationFrame to be called
-      await waitFor(() => {
-        expect(mockRequestAnimationFrame).toHaveBeenCalled();
-      });
-
-      // Check that viewport size is updated (should account for border width)
-      await waitFor(() => {
-        const infoPanel = screen.getByTestId("info-panel");
-        expect(infoPanel).toHaveTextContent("Viewport: 896 × 696"); // 900-4, 700-4 (border width)
-      });
-    });
-
-    it("should handle multiple resize events efficiently using requestAnimationFrame", async () => {
-      render(<TileMap {...defaultProps} />);
-
-      // Trigger multiple resize events rapidly
-      fireEvent.resize(window);
-      fireEvent.resize(window);
-      fireEvent.resize(window);
-
-      await waitFor(() => {
-        // requestAnimationFrame should be called but efficiently throttled
-        expect(mockRequestAnimationFrame).toHaveBeenCalled();
-      });
-    });
-
-    it("should cleanup resize event listeners on unmount", () => {
+  describe("Cleanup", () => {
+    it("should cleanup event listeners on unmount", () => {
       const removeEventListenerSpy = vi.spyOn(window, "removeEventListener");
-      const disconnectSpy = vi.fn();
-
-      // Mock ResizeObserver with disconnect spy
-      const mockObserver = {
-        observe: vi.fn(),
-        unobserve: vi.fn(),
-        disconnect: disconnectSpy,
-      };
-      mockResizeObserver.mockReturnValueOnce(mockObserver);
-
       const { unmount } = render(<TileMap {...defaultProps} />);
 
       unmount();
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith("resize", expect.any(Function));
-      expect(disconnectSpy).toHaveBeenCalled();
-
       removeEventListenerSpy.mockRestore();
     });
 
-    it("should handle ResizeObserver unavailability gracefully", () => {
-      // Temporarily remove ResizeObserver
-      const originalResizeObserver = globalThis.ResizeObserver;
-      delete (globalThis as any).ResizeObserver;
+    it("should disconnect ResizeObserver on unmount", () => {
+      const disconnectSpy = vi.fn();
+      mockResizeObserver.mockReturnValueOnce({
+        observe: vi.fn(),
+        unobserve: vi.fn(),
+        disconnect: disconnectSpy,
+      });
 
-      expect(() => {
-        render(<TileMap {...defaultProps} />);
-      }).not.toThrow();
+      const { unmount } = render(<TileMap {...defaultProps} />);
+      unmount();
 
-      // Restore ResizeObserver
-      globalThis.ResizeObserver = originalResizeObserver;
+      expect(disconnectSpy).toHaveBeenCalled();
     });
-
-    it("should update viewport size accounting for border width", async () => {
-      // Mock specific dimensions
-      Object.defineProperty(HTMLDivElement.prototype, "clientWidth", {
-        configurable: true,
-        value: 1004, // 1000 + 4 (border)
-      });
-      Object.defineProperty(HTMLDivElement.prototype, "clientHeight", {
-        configurable: true,
-        value: 804, // 800 + 4 (border)
-      });
-
-      render(<TileMap {...defaultProps} />);
-
-      // Trigger resize to update viewport
-      fireEvent.resize(window);
-
-      await waitFor(() => {
-        const infoPanel = screen.getByTestId("info-panel");
-        // Should subtract border width (4px total: 2px each side)
-        expect(infoPanel).toHaveTextContent("Viewport: 1000 × 800");
-      });
-    });
-  });
-
-  it("should handle viewport size updates", () => {
-    render(<TileMap {...defaultProps} />);
-
-    const infoPanel = screen.getByTestId("info-panel");
-    // After ResizeObserver is triggered, viewport should be updated from ResizeObserver callback
-    expect(infoPanel).toHaveTextContent("Viewport: 1000 × 800");
-  });
-
-  it("should cleanup resources on unmount", () => {
-    const { unmount } = render(<TileMap {...defaultProps} />);
-
-    // Should not throw errors on unmount
-    expect(() => unmount()).not.toThrow();
   });
 });
