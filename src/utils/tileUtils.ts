@@ -32,18 +32,51 @@ export const getTilesForViewport = (
   const viewportRight = centerX + viewportWidth / 2;
   const viewportBottom = centerY + viewportHeight / 2;
 
-  // 3. Calculate tile range covered by viewport (with buffer)
-  const startTileX = Math.max(0, Math.floor(viewportLeft / TILE_SIZE) - 1);
-  const startTileY = Math.max(0, Math.floor(viewportTop / TILE_SIZE) - 1);
-  const endTileX = Math.min(tilesCount - 1, Math.floor(viewportRight / TILE_SIZE) + 1);
-  const endTileY = Math.min(tilesCount - 1, Math.floor(viewportBottom / TILE_SIZE) + 1);
+  // 3. Calculate tile range covered by viewport
+  const startTileX = Math.max(0, Math.floor(viewportLeft / TILE_SIZE));
+  const startTileY = Math.max(0, Math.floor(viewportTop / TILE_SIZE));
+  const endTileX = Math.min(tilesCount - 1, Math.ceil(viewportRight / TILE_SIZE));
+  const endTileY = Math.min(tilesCount - 1, Math.ceil(viewportBottom / TILE_SIZE));
 
+  // Debug log for zoom level 3
+  if (zoom === 3) {
+    console.log("getTilesForViewport calculation:", {
+      zoom,
+      centerX,
+      centerY,
+      viewportWidth,
+      viewportHeight,
+      viewportLeft,
+      viewportTop,
+      viewportRight,
+      viewportBottom,
+      startTileX,
+      startTileY,
+      endTileX,
+      endTileY,
+      tilesCount,
+    });
+  }
+
+  // 4. Filter out tiles that are completely outside the viewport
   const tiles: TileCoordinate[] = [];
-
-  // 4. Generate tiles within the calculated range
   for (let tileY = startTileY; tileY <= endTileY; tileY++) {
     for (let tileX = startTileX; tileX <= endTileX; tileX++) {
-      tiles.push({ x: tileX, y: tileY, z: zoom });
+      // Calculate tile boundaries
+      const tileLeft = tileX * TILE_SIZE;
+      const tileTop = tileY * TILE_SIZE;
+      const tileRight = tileLeft + TILE_SIZE;
+      const tileBottom = tileTop + TILE_SIZE;
+
+      // Check if tile intersects with viewport
+      if (
+        tileRight > viewportLeft &&
+        tileLeft < viewportRight &&
+        tileBottom > viewportTop &&
+        tileTop < viewportBottom
+      ) {
+        tiles.push({ x: tileX, y: tileY, z: zoom });
+      }
     }
   }
 
@@ -66,9 +99,30 @@ export const getTilePosition = (
   viewportWidth: number, // Viewport width
   viewportHeight: number // Viewport height
 ) => {
-  return {
-    // Tile position relative to viewport center (viewport coordinates)
-    x: tileX * TILE_SIZE - centerX + viewportWidth / 2,
-    y: tileY * TILE_SIZE - centerY + viewportHeight / 2,
+  // Calculate tile's world position
+  const tileWorldX = tileX * TILE_SIZE;
+  const tileWorldY = tileY * TILE_SIZE;
+
+  // Calculate position relative to container center
+  const position = {
+    x: tileWorldX - centerX + viewportWidth / 2,
+    y: tileWorldY - centerY + viewportHeight / 2,
   };
+
+  // Debug log for zoom level 3
+  if (Math.log2(centerX / TILE_SIZE) === 3) {
+    console.log("getTilePosition calculation:", {
+      tileX,
+      tileY,
+      centerX,
+      centerY,
+      viewportWidth,
+      viewportHeight,
+      tileWorldX,
+      tileWorldY,
+      position,
+    });
+  }
+
+  return position;
 };

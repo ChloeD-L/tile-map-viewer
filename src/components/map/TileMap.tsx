@@ -21,15 +21,16 @@ const getWorldCenter = (zoom: number) => {
 export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
   const [zoom, setZoom] = useState(initialZoom);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const lastPositionRef = useRef({ x: 0, y: 0 });
 
-  // map center
+  // map center in world coordinates
   const [mapCenterX, setMapCenterX] = useState(() => getWorldCenter(initialZoom));
   const [mapCenterY, setMapCenterY] = useState(() => getWorldCenter(initialZoom));
 
-  // viewport center
-  const [viewportCenterX, setViewportCenterX] = useState(() => getWorldCenter(initialZoom));
-  const [viewportCenterY, setViewportCenterY] = useState(() => getWorldCenter(initialZoom));
+  // offset from the center
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
 
   const [viewportSize, setViewportSize] = useState({
     width: 800,
@@ -49,30 +50,6 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
     }
   }, []);
 
-  // calculate and update viewport center
-  const updateViewportCenter = useCallback(() => {
-    if (!scrollContainerRef.current) return;
-
-    const container = scrollContainerRef.current;
-    const scrollLeft = container.scrollLeft;
-    const scrollTop = container.scrollTop;
-
-    // calculate scroll offset
-    const centerScrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-    const centerScrollTop = (container.scrollHeight - container.clientHeight) / 2;
-
-    const offsetX = scrollLeft - centerScrollLeft;
-    const offsetY = scrollTop - centerScrollTop;
-
-    const newCenterX = mapCenterX + offsetX;
-    const newCenterY = mapCenterY + offsetY;
-
-    setViewportCenterX(newCenterX);
-    setViewportCenterY(newCenterY);
-
-    return { centerX: newCenterX, centerY: newCenterY };
-  }, [mapCenterX, mapCenterY]);
-
   // add new tiles to existing list (deduplication)
   const addNewTiles = useCallback((newTiles: TileCoordinate[]) => {
     setAllTiles((prevTiles) => {
@@ -87,20 +64,24 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
     });
   }, []);
 
-  const handleScroll = useCallback(() => {
-    const center = updateViewportCenter();
-    if (!center) return;
+  const updateVisibleTiles = useCallback(() => {
+    // Calculate the world size at current zoom level
+    const worldSize = Math.pow(2, zoom) * 256;
+
+    // Ensure we're not going beyond world boundaries
+    const boundedCenterX = Math.max(0, Math.min(worldSize, mapCenterX + offsetX));
+    const boundedCenterY = Math.max(0, Math.min(worldSize, mapCenterY + offsetY));
 
     const newVisibleTiles = getTilesForViewport(
       zoom,
-      center.centerX,
-      center.centerY,
+      boundedCenterX,
+      boundedCenterY,
       viewportSize.width,
       viewportSize.height
     );
 
     addNewTiles(newVisibleTiles);
-  }, [zoom, viewportSize, updateViewportCenter, addNewTiles]);
+  }, [zoom, mapCenterX, mapCenterY, offsetX, offsetY, viewportSize, addNewTiles]);
 
   // Update viewport size on component mount and window resize
   useEffect(() => {
@@ -133,67 +114,126 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
 
   // initialize tiles
   useEffect(() => {
-    const initialTiles = getTilesForViewport(zoom, mapCenterX, mapCenterY, viewportSize.width, viewportSize.height);
-    setAllTiles(initialTiles);
-    setViewportCenterX(mapCenterX);
-    setViewportCenterY(mapCenterY);
-  }, [zoom, mapCenterX, mapCenterY, viewportSize]);
+    updateVisibleTiles();
+  }, [zoom, mapCenterX, mapCenterY, offsetX, offsetY, viewportSize, updateVisibleTiles]);
 
   const worldSize = Math.pow(2, zoom) * 256;
-  const margin = 4 * 10;
   const containerSize = {
-    width: Math.max(worldSize + margin * 2, viewportSize.width),
-    height: Math.max(worldSize + margin * 2, viewportSize.height),
+    width: worldSize,
+    height: worldSize,
   };
 
   const handleZoomIn = useCallback(() => {
     if (zoom < 3) {
-      setZoom(zoom + 1);
-      setMapCenterX(mapCenterX * 2);
-      setMapCenterY(mapCenterY * 2);
+      setAllTiles([]); // Clear existing tiles
+      const newZoom = zoom + 1;
+      setZoom(newZoom);
+
+      // Reset offset and center the view
+      setOffsetX(0);
+      setOffsetY(0);
+
+      // Calculate the world size at the new zoom level
+      const newWorldSize = Math.pow(2, newZoom) * 256;
+      const newCenter = newWorldSize / 2;
+
+      // Set the map center to the new world center
+      setMapCenterX(newCenter);
+      setMapCenterY(newCenter);
+
+      console.log("Zoom in", {
+        zoom,
+        newZoom,
+        newCenter,
+        offsetX,
+        offsetY,
+      });
     }
-  }, [zoom, mapCenterX, mapCenterY]);
+  }, [zoom]);
 
   const handleZoomOut = useCallback(() => {
     if (zoom > 0) {
-      setZoom(zoom - 1);
-      setMapCenterX(mapCenterX / 2);
-      setMapCenterY(mapCenterY / 2);
-    }
-  }, [zoom, mapCenterX, mapCenterY]);
+      setAllTiles([]); // Clear existing tiles
+      const newZoom = zoom - 1;
+      setZoom(newZoom);
 
-  // Auto-scroll to center when container size changes or component mounts
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      // Simple centering: scroll to the middle of the scrollable area
-      const scrollLeft = (container.scrollWidth - container.clientWidth) / 2;
-      const scrollTop = (container.scrollHeight - container.clientHeight) / 2;
+      // Reset offset and center the view
+      setOffsetX(0);
+      setOffsetY(0);
 
-      container.scrollLeft = scrollLeft;
-      container.scrollTop = scrollTop;
+      // Calculate the world size at the new zoom level
+      const newWorldSize = Math.pow(2, newZoom) * 256;
+      const newCenter = newWorldSize / 2;
+
+      // Set the map center to the new world center
+      setMapCenterX(newCenter);
+      setMapCenterY(newCenter);
     }
-  }, [containerSize.width, containerSize.height, viewportSize.width, viewportSize.height]);
+  }, [zoom]);
+
+  // Mouse event handlers for panning
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    lastPositionRef.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (!isDragging) return;
+
+      const dx = e.clientX - lastPositionRef.current.x;
+      const dy = e.clientY - lastPositionRef.current.y;
+
+      // Scale the drag distance based on zoom level
+      const scale = Math.pow(2, zoom);
+      setOffsetX((prev) => prev - dx * scale);
+      setOffsetY((prev) => prev - dy * scale);
+
+      lastPositionRef.current = { x: e.clientX, y: e.clientY };
+    },
+    [isDragging, zoom]
+  );
+
+  const handleMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+  }, []);
 
   return (
     <div
       ref={mapContainerRef}
       className="relative w-[calc(100vw-10rem-4*2*2px)] h-[calc(100vh-11rem-4*2*2px)] 
                  sm:w-[calc(100vw-10rem-4*2*2px)] sm:h-[calc(100vh-11rem-4*2*2px)]
-                 bg-gray-100 border border-gray-400"
+                 bg-gray-100 border border-gray-400 overflow-hidden select-none"
       style={{
         maxWidth: "100%",
         maxHeight: "100%",
+        cursor: isDragging ? "grabbing" : "grab",
       }}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* Scrollable container - constrained to parent size */}
-      <div ref={scrollContainerRef} className="overflow-auto w-full h-full relative" onScroll={handleScroll}>
-        {/* Large scrollable area with map centered */}
+      {/* Map container with absolute positioning */}
+      <div
+        className="absolute"
+        style={{
+          width: containerSize.width,
+          height: containerSize.height,
+          left: `calc(50% - ${containerSize.width / 2}px)`,
+          top: `calc(50% - ${containerSize.height / 2}px)`,
+        }}
+      >
         <RenderTiles
           tiles={allTiles}
           token={token}
-          centerX={mapCenterX}
-          centerY={mapCenterY}
+          centerX={mapCenterX + offsetX}
+          centerY={mapCenterY + offsetY}
           containerSize={containerSize}
         />
       </div>
@@ -204,8 +244,8 @@ export const TileMap: React.FC<TileMapProps> = ({ token, initialZoom = 0 }) => {
 
       <InfoPanel
         zoom={zoom}
-        centerX={viewportCenterX}
-        centerY={viewportCenterY}
+        centerX={mapCenterX + offsetX}
+        centerY={mapCenterY + offsetY}
         viewportSize={viewportSize}
         allTiles={allTiles}
       />
