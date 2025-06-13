@@ -5,8 +5,29 @@ A React frontend application for the Propeller coding challenge - displays map t
 ## Quick Start
 
 ```bash
+# Copy the example environment file
+cp .env.example .env
+
+# Install dependencies
 yarn install
+
+# Start development server
 yarn dev
+```
+
+## Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# API token for accessing the tile server
+VITE_API_TOKEN=your_token_here
+```
+
+You can copy `.env.example` as a template:
+
+```bash
+cp .env.example .env
 ```
 
 ## Challenge Overview
