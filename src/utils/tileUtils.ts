@@ -51,24 +51,24 @@ export const getTilesForViewport = (
 };
 
 /**
- * Calculate the pixel position of a tile relative to the viewport center
+ * Calculate the pixel position of a tile relative to the container center
  *
  * How it works:
  * 1. tileX * TILE_SIZE = tile's X position in world coordinates
  * 2. - centerX = offset relative to world center
- * 3. + viewportWidth/2 = convert to viewport coordinates (viewport center = 0,0)
+ * 3. + containerWidth/2 = convert to container coordinates (container center = 0,0)
  */
 export const getTilePosition = (
   tileX: number, // Tile X coordinate
   tileY: number, // Tile Y coordinate
   centerX: number, // Map center point X coordinate in pixels
   centerY: number, // Map center point Y coordinate in pixels
-  viewportWidth: number, // Viewport width
-  viewportHeight: number // Viewport height
+  containerWidth: number, // Container width
+  containerHeight: number // Container height
 ) => {
   return {
-    // Tile position relative to viewport center (viewport coordinates)
-    x: tileX * TILE_SIZE - centerX + viewportWidth / 2,
-    y: tileY * TILE_SIZE - centerY + viewportHeight / 2,
+    // Tile position relative to container center (container coordinates)
+    x: tileX * TILE_SIZE - centerX + containerWidth / 2,
+    y: tileY * TILE_SIZE - centerY + containerHeight / 2,
   };
 };
